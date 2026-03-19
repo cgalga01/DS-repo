@@ -1,0 +1,143 @@
+---
+title: "HW7"
+author: "Chris Galgano"
+editor: visual
+format: pdf
+execute:
+  echo: true
+  message: false
+  warning: false
+---
+
+```{r setup}
+library(tidyverse)
+library(tidytext)
+library(schrute)
+library(tm)
+library(topicmodels)
+
+set.seed(1234)
+```
+
+# The Office
+
+Let's continue to work with *The Office* text from the [schrute](https://cran.r-project.org/web/packages/schrute/index.html) package.
+
+# Primary Topics
+
+For each season (not each episode anymore), determine the primary topics for the show using 1) a TF-IDF approach and 2) an LDA approach. You should do at least some cleaning of the data to exclude words that don't make sense.
+
+## Data Cleaning and stop word removal
+
+I removed stopwords, also any under 3 characters and also a few 
+non-stopwords that I felt did not contribute to the topics. 
+
+I made the choice to leave in the character names. Knowing the show I felt different seasons of the
+show focused on different characters, I think that came through in both topic analysis methods.
+
+```{r}
+common_words <- c("wimowheh", "googi","yeah", "hey", "gonna", "guys", "people")
+
+theoffice_clean <- theoffice %>% 
+  unnest_tokens(word,text) %>% 
+  anti_join(stop_words %>% distinct(word)) %>% 
+  filter(nchar(word) > 2, !{word %in% common_words}) %>% 
+  mutate(word_id  = row_number()) %>% 
+  select(word_id, season, word)
+
+
+
+
+```
+
+## TF-IDF
+
+```{r}
+office_tfidf <- theoffice_clean %>% 
+  count(season,word) %>% 
+  group_by(season) %>% 
+  mutate(TF = n/sum(n)) %>% 
+  ungroup() %>% 
+  left_join(theoffice_clean %>% 
+              distinct(season,word) %>% 
+              count(word) %>% 
+              rename(Dt = n) %>% 
+              mutate(DF = Dt/{theoffice_clean |> distinct(season) |> nrow()},
+                     DF_adj = Dt / (1 + {theoffice_clean |> distinct(season) |> nrow()}),
+                     IDF = log(1 / DF),
+                     IDF_adj = log(1 / DF_adj)
+                     )
+            ) %>% 
+    mutate(TFIDF = TF * IDF,
+           TFIDF_adj  = TF * IDF_adj)
+
+
+office_tfidf %>%
+  group_by(season) %>%
+  slice_max(TFIDF_adj, n = 5, with_ties = FALSE) %>%
+  ungroup() %>%
+  ggplot(aes(reorder_within(word, TFIDF_adj, season), TFIDF_adj)) +
+  geom_col() +
+  coord_flip() +
+  facet_wrap(~season, scales = "free") +
+  scale_x_reordered() +
+  labs(
+    title = "Top 5 TF-IDF Words per Season",
+    x = "Word",
+    y = "Adjusted TF-IDF"
+  )
+
+```
+
+
+## LDA Analysis
+
+```{r}
+office_lda <- theoffice_clean %>% 
+  count(season,word) %>% 
+  cast_dtm(season,word,n) %>% 
+  LDA(k = 5)
+  
+office_lda_beta <- office_lda %>% 
+  tidy(matrix = "beta") %>%  
+  mutate(topic = paste0("topic",topic)) %>% 
+  group_by(topic) %>% 
+  slice_max(beta, n=10) %>% 
+  ungroup()
+
+  
+office_lda_beta %>% 
+  ggplot() +
+  aes(beta, term |> reorder(beta), fill = topic |> as.factor()) +
+  geom_col(show.legend = F) +
+  facet_wrap(~topic, scales = "free") +
+  scale_y_reordered()
+  
+  
+
+```
+
+
+
+I found the above analysis broke the show into topics, but did not tell me which 
+seasons corresponded to which topics. 
+
+I found the gamma statistic which gives the probability of the topic being in each document.
+This would break down which topics correspond to each season of the show.
+```{r}
+
+office_lda_gamma <- office_lda %>% 
+  tidy(matrix = "gamma") %>%
+  mutate(topic = paste0("topic", topic))
+
+office_lda_gamma %>%
+  ggplot(aes(x = factor(document), y = gamma, fill = topic)) +
+  geom_col() +
+  labs(
+    title = "Topic Proportions by Season",
+    x = "Season",
+    y = "Topic Proportion"
+  )
+
+```
+
