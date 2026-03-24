@@ -33,6 +33,8 @@ I removed stopwords, also any under 3 characters and also a few non-stopwords th
 
 I made the choice to leave in the character names. Knowing the show I felt different seasons of the show focused on different characters, I think that came through in both topic analysis methods.
 
+*\*Amélie: I agree with your decision to keep character names in based on content knowledge. But how did you come up with the common words to remove, specifically "odd" ones like wimowheh and googi?*
+
 ```{r}
 common_words <- c("wimowheh", "googi","yeah", "hey", "gonna", "guys", "people")
 
@@ -87,6 +89,8 @@ office_tfidf %>%
 
 ```
 
+*Amélie: I like the use of adjusted TF-IDF here to get a more accurate & less skewed picture of the most common words from each season.*
+
 ## LDA Analysis
 
 ```{r}
@@ -115,6 +119,8 @@ office_lda_beta %>%
 ```
 
 I found the above analysis broke the show into topics, but did not tell me which seasons corresponded to which topics.
+
+*Amélie: Here, I would recommend reordering the bars so that you can clearly see which terms are most prevalent. Renaming the y-axis (not reorder(term, beta)) probably would make this better as well.*
 
 I found the gamma statistic which gives the probability of the topic being in each document. This would break down which topics correspond to each season of the show.
 
