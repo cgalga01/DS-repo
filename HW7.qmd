@@ -140,3 +140,5 @@ office_lda_gamma %>%
   )
 
 ```
+
+*Amélie: I think it's good that you also broke the LDA down by season to give us a better picture of what terms are more likely/prevalent in certain seasons.*
