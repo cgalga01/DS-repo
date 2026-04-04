@@ -36,6 +36,8 @@ I made the choice to leave in the character names. Knowing the show I felt diffe
 *\*Amélie: I agree with your decision to keep character names in based on content knowledge. But how did you come up with the common words to remove, specifically "odd" ones like wimowheh and googi?*
 
 ```{r}
+
+# Common words with a high TF-IDF that were not descriptive of the season.
 common_words <- c("wimowheh", "googi","yeah", "hey", "gonna", "guys", "people")
 
 theoffice_clean <- theoffice %>% 
@@ -108,11 +110,19 @@ office_lda_beta <- office_lda %>%
 
   
 office_lda_beta %>% 
-  ggplot() +
-  aes(beta, term |> reorder(beta), fill = topic |> as.factor()) +
-  geom_col(show.legend = F) +
+  ggplot(aes(
+    x = beta, 
+    y = reorder_within(term, beta, topic), 
+    fill = as.factor(topic)
+  )) +
+  geom_col(show.legend = FALSE) +
   facet_wrap(~topic, scales = "free") +
-  scale_y_reordered()
+  scale_y_reordered() +
+  labs(
+    x = "Beta (Word Importance)",
+    y = "Term",
+    title = "Top Terms by Topic"
+  )
   
   
 
@@ -121,6 +131,8 @@ office_lda_beta %>%
 I found the above analysis broke the show into topics, but did not tell me which seasons corresponded to which topics.
 
 *Amélie: Here, I would recommend reordering the bars so that you can clearly see which terms are most prevalent. Renaming the y-axis (not reorder(term, beta)) probably would make this better as well.*
+
+*Chris - that was a great idea I updated the graphs and it is much easier to see which terms were most important and they look much more professional now*
 
 I found the gamma statistic which gives the probability of the topic being in each document. This would break down which topics correspond to each season of the show.
 
